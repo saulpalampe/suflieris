@@ -1,0 +1,1354 @@
+<meta charset="utf-8">
+<title>Suflieris</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;1,400&family=Alegreya+SC:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: prompter's desk — script column lit by a "lamp" (sound cues sit inside it, pushed right),
+   atmosphere column beside it, settings drawer that opens on demand, status bar below. Deliberately dark: used backstage. */
+:root{
+  --bg:#141012; --surface:#1b1517; --raise:#251d20; --line:#34292c;
+  --fg:#ece3d6; --muted:#a39587; --faint:#62574f;
+  --lamp:#f0b44c; --lamp-soft:rgba(240,180,76,.10); --lamp-glow:rgba(240,180,76,.22);
+  --fx:#5fc9a8; --fx-soft:rgba(95,201,168,.09); --fx-line:rgba(95,201,168,.35);
+  --atmo:#8fa8e8; --atmo-soft:rgba(143,168,232,.09);
+  --alert:#e2715d;
+  --font-script:"Alegreya",Georgia,"Times New Roman",serif;
+  --font-sc:"Alegreya SC","Alegreya",Georgia,serif;
+  --font-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-ui);font-size:14px;overflow:hidden}
+.app{height:100%;display:grid;grid-template-rows:auto auto 1fr auto;min-height:0}
+button,select,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+h2{font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+
+/* Header */
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  border-bottom:1px solid var(--line);background:var(--surface)}
+.brand{font-family:var(--font-sc);font-weight:700;font-size:1.5rem;letter-spacing:.04em;color:var(--lamp);margin-right:auto;line-height:1}
+.brand small{display:block;font-family:var(--font-ui);font-weight:400;font-size:.72rem;letter-spacing:.02em;color:var(--muted);margin-top:3px}
+.files{display:flex;gap:8px;flex-wrap:wrap;min-width:0}
+.filebtn{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--raise);border-radius:6px;padding:6px 10px;cursor:pointer;max-width:260px;min-width:0}
+.filebtn:hover{border-color:var(--faint)}
+.filebtn:focus-within{outline:2px solid var(--lamp);outline-offset:2px}
+.filebtn b{font-weight:600;font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lamp)}
+.filebtn span{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.filebtn input{position:absolute;opacity:0;width:1px;height:1px}
+.speed{display:flex;align-items:center;gap:10px}
+.speed label{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.speed input{width:130px;accent-color:var(--lamp)}
+.speed output{font-family:var(--font-mono);font-variant-numeric:tabular-nums;min-width:3.6em;font-size:1rem}
+.toggle{background:var(--raise);border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;color:var(--muted)}
+.toggle[aria-pressed=true]{color:var(--lamp);border-color:var(--lamp)}
+
+.notice{padding-block:7px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:var(--lamp-soft);color:var(--lamp);border-bottom:1px solid var(--line);font-size:.85rem}
+.notice.err{background:rgba(226,113,93,.12);color:var(--alert)}
+
+/* Main columns */
+main{display:grid;grid-template-columns:minmax(0,1fr) 280px;min-height:0}
+#script{overflow-y:auto;min-height:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px}
+.spacer{height:38vh}
+.line{max-width:780px;margin-inline:auto;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:2px 14px;
+  padding:12px 18px;border-radius:8px;cursor:pointer;transition:background .25s,opacity .25s}
+.line:hover{background:rgba(255,255,255,.025)}
+.who{font-family:var(--font-sc);font-weight:500;font-size:.95rem;letter-spacing:.06em;display:flex;align-items:center;gap:8px;color:var(--muted)}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.who .cont{font-family:var(--font-ui);font-size:.75rem;letter-spacing:.02em;color:var(--faint)}
+.tc{font-family:var(--font-mono);font-size:.72rem;color:var(--faint);font-variant-numeric:tabular-nums;align-self:center}
+.txt{grid-column:1/-1;font-family:var(--font-script);font-size:1.45rem;line-height:1.4;text-wrap:pretty}
+.remark{cursor:default}
+.remark .txt,.head .txt{grid-column:1/3;grid-row:1}
+.keep{grid-column:3;grid-row:1;display:flex;align-items:center;justify-content:center;width:22px;height:22px;cursor:pointer}
+.keep input{margin:0;width:15px;height:15px;accent-color:var(--muted);opacity:.28;cursor:pointer;transition:opacity .15s}
+.line:hover .keep input,.cue-row:hover .keep input,.keep input:focus-visible,.keep input:not(:checked){opacity:.95}
+.cue-row .keep{align-self:center;margin-left:6px}
+.off{opacity:.3}
+.off .txt{text-decoration:line-through;text-decoration-color:var(--faint);text-decoration-thickness:1px}
+.line.off{cursor:default}
+.head{cursor:default;margin-top:18px;border-top:1px solid var(--line);border-radius:0;padding-top:20px}
+.head .txt{font-family:var(--font-sc);font-weight:700;letter-spacing:.05em;color:var(--lamp);font-size:1.35rem}
+.head.h2 .txt{font-size:1.12rem;color:var(--fg)}
+.head.h3 .txt{font-size:1rem;color:var(--muted)}
+.head.h2,.head.h3{border-top:0;margin-top:6px;padding-top:12px}
+.head:hover{background:none}
+/* Table of contents column */
+.toc-col{border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;min-height:0;padding:14px;display:flex;flex-direction:column;gap:10px}
+.toc{display:flex;flex-direction:column;gap:2px}
+.toc-item{display:flex;align-items:baseline;gap:8px;width:100%;text-align:left;background:none;border:0;border-radius:6px;padding:6px 8px;cursor:pointer;color:var(--fg);font-size:.88rem;line-height:1.3}
+.toc-item:hover{background:var(--raise)}
+.toc-item .t{flex:1;min-width:0}
+.toc-item .n{font-family:var(--font-mono);font-size:.7rem;color:var(--faint);font-variant-numeric:tabular-nums}
+.toc-item.l1{font-family:var(--font-sc);font-weight:700;letter-spacing:.04em;color:var(--lamp);margin-top:6px}
+.toc-item.l2{padding-left:18px}
+.toc-item.l3{padding-left:30px;color:var(--muted);font-size:.82rem}
+.toc-item.here{background:var(--lamp-soft);box-shadow:inset 2px 0 0 var(--lamp)}
+.toc-item.off .t{text-decoration:line-through;color:var(--faint)}
+.savebtn.dirty{color:var(--lamp);border-color:var(--lamp)}
+.savebtn.dirty::after{content:" •"}
+.remark .txt{font-style:italic;font-size:1.1rem;color:var(--faint)}
+.said{opacity:.38}
+.line.active{background:radial-gradient(120% 140% at 50% 0%,var(--lamp-glow),var(--lamp-soft) 60%,transparent);opacity:1;box-shadow:inset 0 0 0 1px rgba(240,180,76,.35)}
+.line.active .who{color:var(--lamp)}
+.line.active .txt{color:#fff6e6}
+.prog{grid-column:1/-1;height:4px;border-radius:2px;background:rgba(255,255,255,.07);margin-top:8px;overflow:hidden;display:none}
+.line.active .prog{display:block}
+.prog i{display:block;height:100%;width:0;background:var(--lamp)}
+
+/* Sound cues inside the script */
+.cue-row{max-width:780px;margin-inline:auto;display:flex;justify-content:flex-end;padding:4px 18px}
+.cue{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:4px 10px;align-items:center;
+  width:min(440px,100%);padding:8px 10px 8px 12px;border-radius:8px;border:1px solid var(--fx-line);background:var(--fx-soft)}
+.cue .ic{color:var(--fx);font-size:1rem;width:1.2em;text-align:center}
+.cue .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cue .tc{font-size:.7rem}
+.cbtn{background:none;border:1px solid var(--line);border-radius:6px;width:32px;height:30px;cursor:pointer;color:var(--fx);display:grid;place-items:center;font-size:.85rem}
+.cbtn:hover{border-color:var(--fx)}
+.cbtn.restart{color:var(--muted)}
+.cbar{grid-column:1/-1;height:3px;border-radius:2px;background:rgba(255,255,255,.06);overflow:hidden}
+.cbar i{display:block;height:100%;width:0;background:var(--fx)}
+.cue[data-st=playing]{background:rgba(95,201,168,.18);border-color:var(--fx)}
+.cue[data-st=playing] .play{color:var(--bg);background:var(--fx);border-color:var(--fx)}
+.cue[data-st=paused] .play{color:var(--alert);border-color:var(--alert)}
+.cue.done:not([data-st=playing]):not([data-st=paused]){opacity:.5}
+.cue.next{box-shadow:0 0 0 2px var(--fx)}
+.cue.atmo{border-color:rgba(143,168,232,.35);background:var(--atmo-soft);width:min(340px,100%);padding-block:5px}
+.cue.atmo .ic,.cue.atmo .play{color:var(--atmo)}
+.cue.atmo .cbar i{background:var(--atmo)}
+.cue.atmo[data-st=playing]{background:rgba(143,168,232,.18);border-color:var(--atmo)}
+.cue.atmo[data-st=playing] .play{color:var(--bg);background:var(--atmo);border-color:var(--atmo)}
+.cue.atmo.next{box-shadow:0 0 0 2px var(--atmo)}
+.loopb{font-family:var(--font-mono);font-size:.68rem;color:var(--atmo);border:1px solid rgba(143,168,232,.4);border-radius:3px;padding:0 4px;margin-left:6px}
+
+/* Atmosphere column */
+.atmo-col{border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;min-height:0;padding:14px;display:flex;flex-direction:column;gap:12px}
+.atmo-col .cue{width:100%}
+.atmo-col .cue{grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"ic nm nm nm" ". tc play restart" "bar bar bar bar";padding:8px 10px}
+.atmo-col .cue .ic{grid-area:ic}
+.atmo-col .cue .nm{grid-area:nm;white-space:normal}
+.atmo-col .cue .tc{grid-area:tc}
+.atmo-col .cue .play{grid-area:play}
+.atmo-col .cue .restart{grid-area:restart}
+.atmo-col .cue .cbar{grid-area:bar}
+.colhead{display:flex;flex-direction:column;gap:10px}
+.stopall{background:none;border:1px solid var(--alert);color:var(--alert);border-radius:8px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.vol{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem}
+.vol input{flex:1;min-width:0;accent-color:var(--fx)}
+.vol output{font-family:var(--font-mono);font-size:.78rem;min-width:3.4em;text-align:right;font-variant-numeric:tabular-nums}
+.empty{color:var(--faint);font-size:.85rem;line-height:1.5;margin:0}
+.empty code{font-family:var(--font-mono);color:var(--muted)}
+
+/* Settings drawer */
+aside{border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;min-height:0;padding:0 16px 16px;display:flex;flex-direction:column;gap:16px}
+.tabs{display:flex;gap:4px;position:sticky;top:0;background:var(--surface);padding-top:12px;border-bottom:1px solid var(--line);z-index:1}
+.tabs button{flex:1;background:none;border:0;border-bottom:2px solid transparent;padding:8px 4px;cursor:pointer;color:var(--muted);font-weight:500;font-size:.85rem}
+.tabs button[aria-selected=true]{color:var(--lamp);border-bottom-color:var(--lamp)}
+.pane{display:flex;flex-direction:column;gap:22px}
+.roles{display:flex;flex-direction:column;gap:8px}
+.role{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--raise)}
+.role .rn{font-family:var(--font-sc);font-weight:700;letter-spacing:.05em;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.role .cnt{color:var(--faint);font-size:.75rem;font-variant-numeric:tabular-nums}
+.role .sel{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:6px}
+.role .sel .chsel{grid-column:1/-1}
+.chan{font-family:var(--font-ui);font-size:.7rem;letter-spacing:.04em;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px;line-height:1.5}
+.chtest{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.role .on{grid-column:1/-1;display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--fg);cursor:pointer}
+.role .on input{accent-color:var(--lamp);width:16px;height:16px;margin:0}
+.role.muted .rn{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--faint)}
+.mute{font-family:var(--font-ui);font-size:.7rem;letter-spacing:.04em;color:var(--alert);border:1px solid rgba(226,113,93,.45);border-radius:4px;padding:0 6px;line-height:1.5}
+.cur .mute{font-size:.72rem}
+select{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:5px 6px;min-width:0;font-size:.85rem}
+.test{background:none;border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--lamp)}
+.test:hover{border-color:var(--lamp)}
+.opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:center;gap:10px}
+.opt input[type=checkbox]{accent-color:var(--lamp);width:16px;height:16px}
+.opt input[type=range]{flex:1;accent-color:var(--lamp);min-width:0}
+.opt output{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);min-width:4.2em;text-align:right;font-variant-numeric:tabular-nums}
+.devrow{display:grid;grid-template-columns:6.5em minmax(0,1fr)}
+.keys{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:.85rem;color:var(--muted);margin:0}
+.keys dd{margin:0}
+.keys .kh{grid-column:1/-1;font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-top:6px}
+kbd{font-family:var(--font-mono);font-size:.75rem;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--fg);background:var(--raise);white-space:nowrap}
+.help{font-size:.82rem;color:var(--muted);line-height:1.6;margin:0}
+.help code{font-family:var(--font-mono);color:var(--fg);font-size:.78rem}
+
+/* Footer */
+footer{border-top:1px solid var(--line);background:var(--surface);padding-block:10px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;grid-template-columns:auto auto minmax(0,1fr) auto auto;gap:8px 18px;align-items:center}
+.state{font-family:var(--font-mono);font-weight:500;letter-spacing:.12em;font-size:.9rem;padding:4px 10px;border-radius:4px;border:1px solid var(--line);min-width:7.5em;text-align:center}
+.state[data-s=playing]{background:var(--lamp);color:#1b1206;border-color:var(--lamp)}
+.state[data-s=cue]{color:var(--lamp);border-color:var(--lamp)}
+.state[data-s=paused]{color:var(--alert);border-color:var(--alert)}
+.cur{font-family:var(--font-sc);font-weight:700;letter-spacing:.05em;display:flex;align-items:center;gap:8px;font-size:1.05rem;min-width:0;white-space:nowrap}
+.bigbar{height:8px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;min-width:60px}
+.bigbar i{display:block;height:100%;width:0;background:var(--lamp)}
+.nums{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--muted);font-size:.85rem;white-space:nowrap}
+.fxnext{font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;max-width:320px}
+.fxnext b{color:var(--fx);font-weight:600}
+
+@media (max-width:1100px){
+  .atmo-col,.toc-col{padding:12px 10px}
+  aside{padding:0 10px 12px}
+  .devrow{grid-template-columns:1fr}
+  .role .sel{grid-template-columns:minmax(0,1fr) auto}
+  .role .sel select:first-child{grid-column:1/-1}
+  .txt{font-size:1.3rem}
+  .line,.cue-row{padding-inline:10px}
+}
+@media (max-width:620px){
+  body{overflow:auto}
+  .app{height:auto;min-height:100%}
+  main{grid-template-columns:1fr!important}
+  #script{height:62vh;padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .atmo-col,.toc-col,aside{border-left:0;border-top:1px solid var(--line);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  footer{grid-template-columns:auto minmax(0,1fr);position:sticky;bottom:0}
+  .bigbar,.fxnext{grid-column:1/-1;max-width:none}
+  .txt{font-size:1.2rem}
+}
+@media (prefers-reduced-motion:reduce){.line{transition:none}}
+</style>
+
+<div class="app">
+  <header>
+    <div class="brand">Suflieris<small>Sufliera un skaņotāja pults teātrim</small></div>
+    <div class="files">
+      <label class="filebtn" title="Viens audio fails ar lugas tekstu un skaņām (MP3, WAV, M4A)">
+        <b>Audio</b><span id="audioName">nav ielādēts</span>
+        <input type="file" id="audioInput" accept="audio/*,.mp3,.wav,.m4a,.ogg">
+      </label>
+      <label class="filebtn" title="Viens SRT fails: replikas, SKAŅA: un FONS: ieraksti">
+        <b>SRT</b><span id="srtName">paraugs</span>
+        <input type="file" id="srtInput" accept=".srt,text/plain">
+      </label>
+    </div>
+    <div class="speed">
+      <label for="speed">Ātrums</label>
+      <input type="range" id="speed" min="1" max="3" step="0.05" value="1">
+      <output id="speedOut">1.00×</output>
+    </div>
+    <button type="button" class="toggle savebtn" id="saveBtn" title="Saglabāt SRT ar izslēgtajiem blokiem">Saglabāt SRT</button>
+    <button type="button" class="toggle" id="tocBtn" aria-pressed="false">Saturs</button>
+    <button type="button" class="toggle" id="setBtn" aria-pressed="false">Iestatījumi</button>
+  </header>
+  <div class="notice" id="notice"></div>
+
+  <main id="main">
+    <div id="script" tabindex="-1" aria-label="Lugas teksts"></div>
+
+    <div class="toc-col" id="tocCol" hidden>
+      <h2 style="margin:0">Saturs</h2>
+      <div class="toc" id="toc"></div>
+    </div>
+
+    <div class="atmo-col">
+      <div class="colhead">
+        <h2 style="margin:0">Atmosfēra</h2>
+        <button type="button" class="stopall" id="stopAllBtn">Apturēt visas skaņas <kbd>Del</kbd></button>
+        <label class="vol">Skaņu skaļums <input type="range" id="fxVol" min="0" max="1.5" step="0.05" value="1"><output id="fxVolOut">100%</output></label>
+      </div>
+      <div id="atmoList" style="display:flex;flex-direction:column;gap:8px"></div>
+    </div>
+
+    <aside id="aside" hidden>
+      <nav class="tabs" role="tablist">
+        <button type="button" role="tab" data-tab="set" id="tab-set">Iestatījumi</button>
+        <button type="button" role="tab" data-tab="roles" id="tab-roles">Lomas</button>
+        <button type="button" role="tab" data-tab="help" id="tab-help">Palīdzība</button>
+      </nav>
+      <div class="pane" data-pane="set">
+        <section>
+          <h2>Izvades ierīces</h2>
+          <div class="opts">
+            <label class="opt devrow">Suflieris <select id="sinkPrompt"><option value="">Noklusētā (sistēmas)</option></select></label>
+            <label class="opt devrow">Skaņas <select id="sinkFx"><option value="">Noklusētā (sistēmas)</option></select></label>
+            <button type="button" class="test" id="devBtn" style="align-self:flex-start;padding:7px 10px">Nolasīt ierīču sarakstu</button>
+            <p class="help" id="devHelp">Piemēram: Suflieris → <code>CABLE Input</code> (uz AudioRelay), Skaņas → zāles skaļruņi. Pārlūks vienreiz palūgs atļauju, lai parādītu ierīču nosaukumus.</p>
+          </div>
+        </section>
+        <section>
+          <h2>Lugas versija</h2>
+          <div class="opts">
+            <p class="help" id="verInfo">Visi bloki ieslēgti.</p>
+            <div class="chtest">
+              <button type="button" class="test" id="saveBtn2">Saglabāt SRT</button>
+              <button type="button" class="test" id="copyBtn">Kopēt SRT tekstu</button>
+              <button type="button" class="test" id="allOnBtn">Ieslēgt visus blokus</button>
+            </div>
+          </div>
+        </section>
+        <section>
+          <h2>Suflieris</h2>
+          <div class="opts">
+            <div class="chtest">Pārbaudīt kanālu:
+              <button type="button" class="test" id="testL">◀ Kreisais</button>
+              <button type="button" class="test" id="testB">Abi</button>
+              <button type="button" class="test" id="testR">Labais ▶</button>
+            </div>
+            <label class="opt"><input type="checkbox" id="optMarkers" checked> Atskaņot lomas signālu</label>
+            <label class="opt"><input type="checkbox" id="optCont"> Signāls arī turpinājumam (↳)</label>
+            <label class="opt">Signāla skaļums <input type="range" id="optVol" min="0" max="1" step="0.05" value="0.6"></label>
+            <label class="opt" title="Pārbīda visus replikas laikus attiecībā pret audio">Laika nobīde <input type="range" id="optOffset" min="-3" max="3" step="0.05" value="0"><output id="outOffset">0.00 s</output></label>
+            <label class="opt" title="Cik agrāk sākt pirms subtitra sākuma">Rezerve pirms <input type="range" id="optPadB" min="0" max="0.5" step="0.05" value="0.05"><output id="outPadB">0.05 s</output></label>
+            <label class="opt" title="Cik ilgāk skanēt pēc subtitra beigām">Rezerve pēc <input type="range" id="optPadA" min="0" max="1" step="0.05" value="0.2"><output id="outPadA">0.20 s</output></label>
+          </div>
+        </section>
+      </div>
+      <div class="pane" data-pane="roles">
+        <section>
+          <h2>Lomas un signāli</h2>
+          <div class="roles" id="roles"></div>
+        </section>
+      </div>
+      <div class="pane" data-pane="help">
+        <section>
+          <h2>Taustiņi</h2>
+          <dl class="keys">
+            <dt class="kh">Suflieris</dt>
+            <dt><kbd>Space</kbd></dt><dd>atskaņot · pauze · turpināt</dd>
+            <dt><kbd>↑</kbd></dt><dd>pauzē: uz frāzes sākumu; citādi iepriekšējā</dd>
+            <dt><kbd>↓</kbd></dt><dd>nākamā frāze</dd>
+            <dt><kbd>Esc</kbd> <kbd>⌫</kbd></dt><dd>apturēt, atpakaļ uz frāzes sākumu</dd>
+            <dt><kbd>Home</kbd> <kbd>End</kbd></dt><dd>uz lugas sākumu · beigām</dd>
+            <dt class="kh">Skaņas</dt>
+            <dt><kbd>Enter</kbd></dt><dd>atskaņot nākamo iezīmēto skaņu (⏎)</dd>
+            <dt><kbd>Del</kbd></dt><dd>apturēt visas skaņas ar izdzišanu</dd>
+            <dt>▶ ❚❚</dt><dd>atskaņot · pauze ar peli</dd>
+            <dt>⟲</dt><dd>apturēt un atgriezt sākumā</dd>
+            <dt class="kh">Kanāli</dt>
+            <dt>◀ kreisā</dt><dd>lomas replikas tikai kreisajā austiņā (A grupa)</dd>
+            <dt>labā ▶</dt><dd>tikai labajā austiņā (B grupa); iestata cilnē Lomas</dd>
+            <dt>bez skaņas</dt><dd>lomai izslēgta suflēšana: teksts un progress iet, skaņas nav</dd>
+            <dt class="kh">Saīsināšana</dt>
+            <dt>☑</dt><dd>ķeksītis bloka labajā pusē; noņemts = bloks izlaists</dd>
+            <dt>☑ pie virsraksta</dt><dd>ieslēdz vai izslēdz visu ainu</dd>
+          </dl>
+        </section>
+        <section>
+          <h2>SRT formāts</h2>
+          <p class="help">Replika: <code>OFĒLIJA: Mans princi…</code><br>
+          Bez vārda: tās pašas lomas turpinājums (↳).<br>
+          Remarka: viss iekavās, <code>(iziet)</code>.<br>
+          Īsa skaņa tekstā: <code>SKAŅA: Durvju klauvējiens</code><br>
+          Fona skaņa stabiņā: <code>FONS: Vējš</code><br>
+          Fons, kas atkārtojas līdz apturēšanai: <code>FONS: Vējš (cilpa)</code><br>
+          Virsraksts saturam: <code># 1. CĒLIENS</code>, <code>## 2. aina</code>, <code>### Skats</code><br>
+          Izslēgts bloks: <code>[IZSLĒGTS] MARTA: …</code><br><br>
+          Skaņu bloks faila beigās: aiz pēdējās replikas ierakstiet skaņas ar tādiem pašiem nosaukumiem un īstajiem laikiem. Skaņa tekstā tad ņem audio no šī bloka (atzīme ↧), un tās pašas laiks tekstā var būt jebkāds īss intervāls.</p>
+        </section>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <div class="state" id="state" data-s="idle">GAIDA</div>
+    <div class="cur" id="cur"></div>
+    <div class="bigbar"><i id="bigbar"></i></div>
+    <div class="nums" id="nums"></div>
+    <div class="fxnext" id="fxNext"></div>
+  </footer>
+</div>
+<audio id="audio" preload="auto"></audio>
+
+<script>
+(() => {
+const SAMPLE_SRT = `1
+00:00:00,000 --> 00:00:00,300
+# 1. CĒLIENS
+
+2
+00:00:00,300 --> 00:00:00,600
+## 1. aina. Stacija vakarā
+
+3
+00:00:00,607 --> 00:00:03,007
+(Maza stacija. Vakars. Marta sēž uz čemodāna.)
+
+4
+00:00:03,400 --> 00:00:04,787
+FONS: Vējš stacijā (cilpa)
+
+5
+00:00:04,987 --> 00:00:09,067
+MARTA: Vilciens kavējas jau trešo stundu. Vai tas vispār pienāks?
+
+6
+00:00:09,460 --> 00:00:13,987
+ERNESTS: Pienāks. Vilcieni vienmēr pienāk, tikai ne tad, kad mēs gaidām.
+
+7
+00:00:14,340 --> 00:00:17,740
+MARTA: Jūs to sakāt tā, it kā būtu te nodzīvojis visu mūžu.
+
+8
+00:00:17,960 --> 00:00:21,367
+ERNESTS: Gandrīz. Divdesmit gadus es te pārdevu biļetes.
+
+9
+00:00:21,560 --> 00:00:24,520
+Tagad vairs nepārdodu. Tagad tikai gaidu.
+
+10
+00:00:24,600 --> 00:00:24,900
+SKAŅA: Soļi uz perona
+
+11
+00:00:24,931 --> 00:00:28,980
+KONDUKTORS: Pilsoni! Šeit sēdēt nedrīkst, sols ir svaigi krāsots.
+
+12
+00:00:29,293 --> 00:00:30,240
+ERNESTS: Kopš kura laika?
+
+13
+00:00:30,460 --> 00:00:32,880
+KONDUKTORS: Kopš rīta. Uzraksts taču karājās.
+
+14
+00:00:33,127 --> 00:00:34,820
+MARTA: Es neredzēju nekādu uzrakstu.
+
+15
+00:00:35,007 --> 00:00:37,367
+KONDUKTORS: Vējš to aiznesa. Bet krāsa palika.
+
+16
+00:00:37,370 --> 00:00:37,388
+## 2. aina. Preču vilciens
+
+17
+00:00:37,391 --> 00:00:37,691
+SKAŅA: Tāla vilciena svilpe
+
+18
+00:00:37,715 --> 00:00:38,742
+MARTA, ERNESTS: Vilciens!
+
+19
+00:00:38,966 --> 00:00:42,599
+KONDUKTORS: Nē. Tas ir preču vilciens. Tas te neapstājas.
+
+20
+00:00:42,767 --> 00:00:43,034
+SKAŅA: Preču vilciens pabrauc garām
+
+21
+00:00:43,240 --> 00:00:43,540
+FONS: Mūzika: fināls
+
+22
+00:00:43,979 --> 00:01:46,240
+FONS: Vējš stacijā
+
+23
+00:01:46,975 --> 00:01:54,021
+SKAŅA: Soļi uz perona
+
+24
+00:01:55,989 --> 00:01:59,529
+SKAŅA: Tāla vilciena svilpe
+
+25
+00:02:00,903 --> 00:02:51,286
+SKAŅA: Preču vilciens pabrauc garām
+
+26
+00:02:53,920 --> 00:04:39,386
+FONS: Mūzika: fināls
+`;
+
+const MOTIFS = [
+  {name:"Kvarta augšup", notes:[72,77]},
+  {name:"Terca lejup", notes:[76,72]},
+  {name:"Trijskanis augšup", notes:[72,76,79]},
+  {name:"Trijskanis lejup", notes:[79,76,72]},
+  {name:"Oktāvas lēciens", notes:[67,79]},
+  {name:"Trīs vienādas", notes:[74,74,74]},
+  {name:"Kvinta lejup", notes:[79,72]},
+  {name:"Sekunde augšup", notes:[72,74]},
+  {name:"Minors augšup", notes:[69,72,76]},
+  {name:"Lēciens un atpakaļ", notes:[72,79,72]},
+  {name:"Hromatisks kāpiens", notes:[72,73,74]},
+  {name:"Augsts pāris", notes:[84,79]},
+];
+const TIMBRES = {zvans:"Zvans", ksilofons:"Ksilofons", flauta:"Flauta", ergeles:"Ērģeles", pikstiens:"Pīkstiens"};
+const TKEYS = Object.keys(TIMBRES);
+const CHANS = {both:"Kanāls: abi", L:"Kanāls: kreisais (A grupa)", R:"Kanāls: labais (B grupa)"};
+const PANV = {both:0, L:-1, R:1};
+const chanBadge = p => p === "L" ? "◀ kreisā" : p === "R" ? "labā ▶" : "";
+const COLORS = ["#7fb3d5","#e58f7a","#9fcf8c","#c9a0dc","#e6c86e","#7fd1c3","#f0a3c0","#b4b6f2","#d9a877","#a7c7a0"];
+
+const $ = id => document.getElementById(id);
+const audio = $("audio"), scriptEl = $("script");
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem("suflieris."+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem("suflieris."+k, JSON.stringify(v)); }catch(e){} }
+};
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function fmt(t){
+  if(!isFinite(t)) return "–";
+  const h = Math.floor(t/3600), m = Math.floor(t%3600/60), s = t%60;
+  return (h ? h+":" + String(m).padStart(2,"0") : m) + ":" + s.toFixed(1).padStart(4,"0");
+}
+
+/* State */
+let lines = [], roles = new Map(), cur = -1, state = "idle";
+let src = null;              // decoded audio: {ch:[Int16Array], rate, length}
+let loading = false;
+let speed = 1, markersOn = true, markCont = false, markerVol = 0.6;
+let offset = 0, padB = 0.05, padA = 0.2;
+let demo = {t:0, last:0};
+let cueTimer = null, raf = null, ctx = null, master = null, liveNodes = [];
+let lineEls = [], wakeLock = null, clipUrl = null, clipKey = "";
+const fx = {ctx:null, master:null, vol:1, raf:null, next:-1};
+const savedRoles = store.get("roles", {});
+
+/* ================= SRT ================= */
+function parseTime(s){
+  const m = String(s).trim().match(/(\d+):(\d+):(\d+)[,.](\d+)/);
+  if(!m) return NaN;
+  return (+m[1])*3600 + (+m[2])*60 + (+m[3]) + parseInt(m[4].padEnd(3,"0").slice(0,3),10)/1000;
+}
+const normKey = s => s.trim().replace(/\s+/g," ").toLocaleUpperCase("lv");
+const isUpperName = s => { s = s.trim(); return s.length >= 2 && !/\d/.test(s) && /\p{L}/u.test(s) && s === s.toLocaleUpperCase("lv"); };
+const FX_RE = /^\s*(SKAŅA|SKANA|EFEKTS|FONS|ATMOSFĒRA|ATMOSFERA)\s*:\s*([\s\S]+)$/i;
+const LOOP_RE = /\(?\s*(cilpa|cilpā|loop)\s*\)?/i;
+const OFF_RE = /^\s*\[\s*(IZSLĒGTS|IZSLEGTS|OFF)\s*\]\s*/i;
+const HEAD_RE = /^(#{1,3})\s*([\s\S]+)$/;
+const isOff = l => !!(l && l.raw && l.raw.off);
+
+function parseSRT(text){
+  text = text.replace(/^﻿/,"").replace(/\r/g,"");
+  const raw = [];
+  for(const b of text.split(/\n\s*\n/)){
+    const ls = b.split("\n").filter(l => l.trim() !== "");
+    const i = ls.findIndex(l => l.includes("-->"));
+    if(i < 0) continue;
+    const [a, c] = ls[i].split("-->");
+    const start = parseTime(a), end = parseTime(c);
+    if(isNaN(start) || isNaN(end) || end <= start) continue;
+    let off = false;
+    const body = ls.slice(i+1).join("\n").replace(/<[^>]+>/g,"").replace(/\{\\[^}]*\}/g,"").trim().replace(OFF_RE, () => { off = true; return ""; });
+    if(body) raw.push({start, end, body, off});
+  }
+  const known = new Set();
+  for(const r of raw){
+    if(FX_RE.test(r.body) || HEAD_RE.test(r.body)) continue;
+    const m = r.body.match(/^([^:\n]{1,40}):\s*([\s\S]+)$/);
+    if(m && isUpperName(m[1])) known.add(normKey(m[1]));
+  }
+  const out = []; let prev = null;
+  for(const r of raw){
+    const h = r.body.match(HEAD_RE);
+    if(h){ out.push({start:r.start, end:r.end, raw:r, kind:"head", level:h[1].length, text:h[2].replace(/\s+/g," ").trim()}); continue; }
+    const f = r.body.match(FX_RE);
+    if(f){
+      const atmo = /^(FONS|ATMOSF)/i.test(f[1]);
+      const loop = atmo && LOOP_RE.test(f[2]);
+      const name = f[2].replace(LOOP_RE, "").replace(/\s+/g," ").trim() || (atmo ? "Fons" : "Skaņa");
+      out.push({...r, raw:r, kind:"fx", atmo, loop, name, fs:{status:"idle", offset:0, done:false, src:null, g:null, t0:0, buf:null, els:[]}});
+      continue;
+    }
+    if(/^\([\s\S]*\)$/.test(r.body)){ out.push({...r, raw:r, kind:"remark", text:r.body}); continue; }
+    const m = r.body.match(/^([^:\n]{1,40}):\s*([\s\S]+)$/);
+    if(m && !/\d/.test(m[1]) && (isUpperName(m[1]) || known.has(normKey(m[1])))){
+      prev = normKey(m[1]);
+      out.push({...r, raw:r, kind:"line", role:prev, display:m[1].trim(), text:m[2].trim(), cont:false});
+    } else {
+      out.push({...r, raw:r, kind:"line", role:prev || "BEZ LOMAS", text:r.body, cont:!!prev});
+    }
+  }
+  /* Sound library: sound blocks after the last spoken line whose name matches a sound in the text.
+     The text cue keeps its place but plays the library block's audio; the library block itself is hidden. */
+  const nk = n => n.toLocaleLowerCase("lv").replace(/\s+/g," ").trim();
+  const lastLine = out.map(e => e.kind).lastIndexOf("line");
+  const used = new Set();
+  for(let i = 0; i < out.length; i++){
+    const e = out[i]; if(e.kind !== "fx" || used.has(e)) continue;
+    let L = null;
+    for(let j = out.length - 1; j > Math.max(i, lastLine); j--) if(out[j].kind === "fx" && nk(out[j].name) === nk(e.name)){ L = out[j]; break; }
+    if(!L) continue;
+    e.start = L.start; e.end = L.end; e.fromLib = true;
+    if(L.loop && e.atmo) e.loop = true;
+    used.add(L);
+  }
+  const res = used.size ? out.filter(e => !used.has(e)) : out;
+  res.libCount = used.size; res.raw = raw;
+  return res;
+}
+
+function buildRoles(){
+  roles = new Map();
+  for(const l of lines){
+    if(l.kind !== "line") continue;
+    if(!roles.has(l.role)){
+      const i = roles.size, sv = savedRoles[l.role];
+      roles.set(l.role, {
+        key:l.role, display:l.display || l.role, count:0, color:COLORS[i % COLORS.length],
+        motif: sv && MOTIFS[sv.motif] ? sv.motif : i % MOTIFS.length,
+        timbre: sv && TIMBRES[sv.timbre] ? sv.timbre : TKEYS[(i + Math.floor(i/MOTIFS.length)) % TKEYS.length],
+        pan: sv && CHANS[sv.pan] ? sv.pan : "both",
+        mute: !!(sv && sv.mute)
+      });
+    }
+    roles.get(l.role).count++;
+  }
+}
+
+/* ================= Render ================= */
+function cueHTML(l, i){
+  const dur = l.end - l.start;
+  return `<div class="cue${l.atmo ? " atmo" : ""}" data-fx="${i}" data-st="idle">
+    <span class="ic">${l.atmo ? "≈" : "♪"}</span>
+    <span class="nm" title="${esc(l.name)}">${esc(l.name)}${l.loop ? '<span class="loopb">cilpa</span>' : ""}</span>
+    <span class="tc" title="${l.fromLib ? "Audio no skaņu bloka faila beigās, " : ""}${fmt(l.start)}–${fmt(l.end)}">${dur.toFixed(1)} s${l.fromLib ? " ↧" : ""}</span>
+    <button type="button" class="cbtn play" data-act="toggle" aria-label="Atskaņot vai pauze">▶</button>
+    <button type="button" class="cbtn restart" data-act="restart" aria-label="Uz sākumu">⟲</button>
+    <div class="cbar"><i></i></div></div>`;
+}
+function renderScript(){
+  const html = ['<div class="spacer"></div>'];
+  const keep = (i, l, what) => `<label class="keep" title="${what}"><input type="checkbox" data-keep="${i}" aria-label="${what}"${isOff(l) ? "" : " checked"}></label>`;
+  lines.forEach((l, i) => {
+    const off = isOff(l) ? " off" : "";
+    if(l.kind === "head"){
+      html.push(`<div class="line head h${l.level}${off}" data-i="${i}" id="h-${i}"><div class="txt">${esc(l.text)}</div>${keep(i, l, "Ieslēgt vai izslēgt visu sadaļu")}</div>`);
+    } else if(l.kind === "remark"){
+      html.push(`<div class="line remark${off}" data-i="${i}"><div class="txt">${esc(l.text)}</div>${keep(i, l, "Ieslēgt vai izslēgt bloku")}</div>`);
+    } else if(l.kind === "fx"){
+      html.push(`<div class="cue-row${off}" data-i="${i}">${cueHTML(l, i)}${keep(i, l, "Ieslēgt vai izslēgt skaņu")}</div>`);
+    } else {
+      const r = roles.get(l.role);
+      const who = l.cont
+        ? `<span class="dot" style="background:${r.color}"></span><span class="cont">↳ ${esc(r.display)} turpina</span>`
+        : `<span class="dot" style="background:${r.color}"></span>${esc(r.display)}`;
+      const badge = `<span class="chan" data-chan="${esc(r.key)}"${r.pan === "both" ? " hidden" : ""}>${chanBadge(r.pan)}</span><span class="mute" data-mute="${esc(r.key)}"${r.mute ? "" : " hidden"}>bez skaņas</span>`;
+      html.push(`<div class="line${off}" data-i="${i}"><div class="who">${who}${badge}</div><span class="tc">${fmt(l.start)}</span>${keep(i, l, "Ieslēgt vai izslēgt repliku")}<div class="txt">${esc(l.text).replace(/\n/g,"<br>")}</div><div class="prog"><i></i></div></div>`);
+    }
+  });
+  html.push('<div class="spacer"></div>');
+  scriptEl.innerHTML = html.join("");
+  lineEls = [];
+  scriptEl.querySelectorAll("[data-i]").forEach(el => lineEls[+el.dataset.i] = el);
+
+  const atmos = [];
+  lines.forEach((l, i) => { if(l.kind === "fx" && l.atmo) atmos.push(cueHTML(l, i)); });
+  $("atmoList").innerHTML = atmos.length ? atmos.join("")
+    : `<p class="empty">Šajā SRT nav fona skaņu. Pievienojiet ierakstu <code>FONS: nosaukums</code>, un tas parādīsies šeit.</p>`;
+  lines.forEach((l, i) => { if(l.kind === "fx") l.fs.els = [...document.querySelectorAll(`.cue[data-fx="${i}"]`)]; });
+  lines.forEach((l, i) => { if(l.kind === "fx") l.fs.els.forEach(el => el.closest(".atmo-col") && el.classList.toggle("off", isOff(l))); });
+  renderToc();
+}
+
+/* ================= Table of contents ================= */
+function sectionEnd(h){
+  const lv = lines[h].level;
+  for(let i = h + 1; i < lines.length; i++) if(lines[i].kind === "head" && lines[i].level <= lv) return i;
+  return lines.length;
+}
+function renderToc(){
+  const heads = lines.map((l, i) => [l, i]).filter(([l]) => l.kind === "head");
+  $("toc").innerHTML = heads.length ? heads.map(([l, i]) => {
+    const e = sectionEnd(i); let n = 0;
+    for(let k = i + 1; k < e; k++) if(lines[k].kind === "line" && !isOff(lines[k])) n++;
+    return `<button type="button" class="toc-item l${l.level}${isOff(l) ? " off" : ""}" data-h="${i}"><span class="t">${esc(l.text)}</span><span class="n">${n}</span></button>`;
+  }).join("") : `<p class="empty">Šajā SRT nav virsrakstu. Pievienojiet blokus ar <code># 1. CĒLIENS</code> vai <code>## 2. aina</code>, un tie parādīsies šeit.</p>`;
+  markToc();
+}
+function markToc(){
+  let h = -1;
+  for(let i = 0; i <= cur && i < lines.length; i++) if(lines[i].kind === "head") h = i;
+  document.querySelectorAll(".toc-item").forEach(b => {
+    const on = +b.dataset.h === h; b.classList.toggle("here", on);
+    if(on) b.scrollIntoView({block:"nearest"});
+  });
+}
+$("toc").addEventListener("click", e => {
+  const b = e.target.closest(".toc-item"); if(!b) return;
+  const h = +b.dataset.h; b.blur();
+  if(state === "playing" || state === "cue"){ showNotice("Vispirms apturiet repliku (Esc vai Space), tad pārlēciet uz citu sadaļu.", true); return; }
+  const n = nextIdx(h, 1);
+  if(n < 0){ showNotice("Šajā sadaļā nav ieslēgtu replikas.", true); return; }
+  goTo(n);
+  const he = lineEls[h]; if(he && n - h > 1) he.scrollIntoView({block:"start", behavior:"smooth"});
+});
+
+/* ================= Enable / disable blocks ================= */
+let dirty = false;
+function setDirty(v){
+  dirty = v;
+  [$("saveBtn"), $("saveBtn2")].forEach(b => b.classList.toggle("dirty", v));
+  const offN = (lines.raw || []).filter(r => r.off).length, all = lines.filter(l => l.kind === "line").length;
+  const offL = lines.filter(l => l.kind === "line" && isOff(l)).length;
+  $("verInfo").textContent = offN ? `Izslēgto bloku: ${offN}. Aktīvas replikas: ${all - offL} no ${all}.` + (v ? " Izmaiņas vēl nav saglabātas." : "")
+                                  : "Visi bloki ieslēgti." + (v ? " Izmaiņas vēl nav saglabātas." : "");
+}
+function setOff(i, off){
+  const l = lines[i];
+  if(l.kind === "head"){ const e = sectionEnd(i); for(let k = i; k < e; k++) lines[k].raw.off = off; }
+  else l.raw.off = off;
+  refreshOff();
+}
+function refreshOff(){
+  _sp = null;
+  lines.forEach((l, i) => {
+    const el = lineEls[i]; if(!el) return;
+    el.classList.toggle("off", isOff(l));
+    const cb = el.querySelector(":scope > .keep input"); if(cb) cb.checked = !isOff(l);
+    if(l.kind === "fx") l.fs.els.forEach(c => c.closest(".atmo-col") && c.classList.toggle("off", isOff(l)));
+  });
+  setDirty(true);
+  renderToc();
+  if(cur >= 0 && isOff(lines[cur]) && state !== "playing" && state !== "cue"){
+    const n = nextIdx(cur, 1), p = nextIdx(cur, -1);
+    if(n >= 0) select(n); else if(p >= 0) select(p);
+  } else { updateClasses(); renderStatus(state === "idle" ? 0 : currentFrac()); updateNextFx(); }
+}
+scriptEl.addEventListener("change", e => {
+  const cb = e.target.closest("[data-keep]"); if(!cb) return;
+  setOff(+cb.dataset.keep, !cb.checked); cb.blur();
+});
+
+/* ================= Save SRT ================= */
+let srtFileName = "luga.srt";
+const ts = t => { const ms = Math.round(t*1000), h = Math.floor(ms/3600000), m = Math.floor(ms/60000)%60, s2 = Math.floor(ms/1000)%60;
+  return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s2).padStart(2,"0")},${String(ms%1000).padStart(3,"0")}`; };
+function buildSRT(){
+  return (lines.raw || []).map((r, n) => `${n+1}\n${ts(r.start)} --> ${ts(r.end)}\n${r.off ? "[IZSLĒGTS] " : ""}${r.body}\n`).join("\n");
+}
+async function saveSRT(){
+  const text = "\uFEFF" + buildSRT().replace(/\n/g, "\r\n");
+  if(window.claude && window.claude.use){
+    // Inside the Claude viewer: hand the file over through the viewer (it allows .txt, not .srt)
+    let dl = null; try{ dl = await window.claude.use("downloads"); }catch(e){}
+    if(dl){
+      const fname = srtFileName.replace(/\.(srt|txt)$/i, "") + ".srt.txt";
+      try{
+        await dl.save({filename: fname, data: text});
+        setDirty(false);
+        showNotice(`Saglabāts „${fname}”. Suflieris to var ielādēt uzreiz; Subtitle Edit pirms atvēršanas pārdēvējiet uz .srt.`);
+      }catch(e){
+        if(e && e.code === "declined") return;
+        showNotice("Saglabāt neizdevās. Lietojiet „Kopēt SRT tekstu” iestatījumos vai atveriet suflieris.html lokāli.", true);
+      }
+      return;
+    }
+  }
+  if(window.showSaveFilePicker){
+    try{
+      const h = await window.showSaveFilePicker({suggestedName: srtFileName, types:[{description:"SRT subtitri", accept:{"text/plain":[".srt"]}}]});
+      const w = await h.createWritable(); await w.write(new Blob([text], {type:"text/plain"})); await w.close();
+      srtFileName = h.name; $("srtName").textContent = h.name;
+      setDirty(false); showNotice(`Saglabāts „${h.name}”.`); return;
+    }catch(e){ if(e && e.name === "AbortError") return; }
+  }
+  try{
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], {type:"text/plain;charset=utf-8"}));
+    a.download = srtFileName; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    setDirty(false);
+    showNotice(`Fails „${srtFileName}” nosūtīts uz lejupielādēm. Ja nekas neparādījās, atveriet suflieris.html lokāli vai lietojiet „Kopēt SRT tekstu” iestatījumos.`);
+  }catch(e){ showNotice("Saglabāt neizdevās. Lietojiet „Kopēt SRT tekstu” iestatījumos un ielīmējiet to teksta failā.", true); }
+}
+$("saveBtn").onclick = e => { saveSRT(); e.currentTarget.blur(); };
+$("saveBtn2").onclick = e => { saveSRT(); e.currentTarget.blur(); };
+$("copyBtn").onclick = e => {
+  const t = buildSRT(); e.currentTarget.blur();
+  navigator.clipboard.writeText(t).then(() => showNotice("SRT teksts nokopēts. Ielīmējiet to teksta failā un saglabājiet ar paplašinājumu .srt (UTF-8)."),
+    () => showNotice("Kopēt neizdevās šajā vidē. Lietojiet „Saglabāt SRT”.", true));
+};
+$("allOnBtn").onclick = e => { (lines.raw || []).forEach(r => r.off = false); refreshOff(); e.currentTarget.blur(); };
+window.addEventListener("beforeunload", e => { if(dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+function renderRoles(){
+  const box = $("roles"); box.innerHTML = "";
+  let n = 0;
+  for(const r of roles.values()){
+    n++;
+    const el = document.createElement("div"); el.className = "role" + (r.mute ? " muted" : "");
+    el.innerHTML = `<span class="dot" style="background:${r.color}"></span>
+      <span class="rn">${esc(r.display)}</span><span class="cnt">${r.count} fr.</span>
+      <div class="sel">
+        <select id="m-${n}" aria-label="Melodija">${MOTIFS.map((m,i)=>`<option value="${i}"${i===r.motif?" selected":""}>${m.name}</option>`).join("")}</select>
+        <select id="t-${n}" aria-label="Tembrs">${TKEYS.map(k=>`<option value="${k}"${k===r.timbre?" selected":""}>${TIMBRES[k]}</option>`).join("")}</select>
+        <button class="test" type="button" aria-label="Noklausīties">▶</button>
+        <label class="on"><input type="checkbox" id="on-${n}"${r.mute ? "" : " checked"}> Suflēt šai lomai</label>
+        <select id="c-${n}" class="chsel" aria-label="Kanāls">${Object.keys(CHANS).map(k=>`<option value="${k}"${k===r.pan?" selected":""}>${CHANS[k]}</option>`).join("")}</select>
+      </div>`;
+    const [ms, ts, cs] = el.querySelectorAll("select");
+    const save = () => { savedRoles[r.key] = {motif:r.motif, timbre:r.timbre, pan:r.pan, mute:r.mute}; store.set("roles", savedRoles); };
+    const on = el.querySelector(".on input");
+    on.onchange = () => {
+      r.mute = !on.checked; save(); el.classList.toggle("muted", r.mute); updateBadges(r);
+      if(cur >= 0 && lines[cur].role === r.key){ applyMute(); renderStatus(state === "idle" ? 0 : currentFrac()); }
+      on.blur();
+    };
+    cs.onchange = () => { r.pan = cs.value; save(); updateBadges(r); playMotif(r); cs.blur(); };
+    ms.onchange = () => { r.motif = +ms.value; save(); playMotif(r); ms.blur(); };
+    ts.onchange = () => { r.timbre = ts.value; save(); playMotif(r); ts.blur(); };
+    el.querySelector(".test").onclick = e => { playMotif(r); e.currentTarget.blur(); };
+    box.appendChild(el);
+  }
+}
+
+function updateBadges(r){
+  document.querySelectorAll(".chan[data-chan]").forEach(b => {
+    if(b.dataset.chan !== r.key) return;
+    b.textContent = chanBadge(r.pan); b.hidden = r.pan === "both";
+  });
+  document.querySelectorAll(".mute[data-mute]").forEach(b => { if(b.dataset.mute === r.key) b.hidden = !r.mute; });
+}
+function lineMuted(){ const l = lines[cur], r = l && roles.get(l.role); return !!(r && r.mute); }
+function applyMute(){ audio.muted = lineMuted(); }
+function updateClasses(){
+  lineEls.forEach((el, i) => {
+    if(!el || lines[i].kind === "fx" || lines[i].kind === "head") return;
+    el.classList.toggle("said", i < cur);
+    el.classList.toggle("active", i === cur);
+  });
+}
+function centerCurrent(){
+  const el = lineEls[cur]; if(!el) return;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  scriptEl.scrollTo({top: el.offsetTop - scriptEl.clientHeight/2 + el.offsetHeight/2, behavior: reduce ? "auto" : "smooth"});
+}
+
+const LABELS = {idle:"GAIDA", cue:"SIGNĀLS", playing:"SKAN", paused:"PAUZE", end:"BEIGAS"};
+let _sp = null;
+function speakable(){ return _sp || (_sp = lines.map((l,i)=>l.kind==="line" && !isOff(l)?i:-1).filter(i=>i>=0)); }
+function renderStatus(frac){
+  const l = lines[cur];
+  $("state").textContent = LABELS[state]; $("state").dataset.s = state;
+  if(l && l.kind === "line"){ const r = roles.get(l.role); $("cur").innerHTML = `<span class="dot" style="background:${r.color}"></span>${esc(r.display)}` + (r.mute ? ' <span class="mute">bez skaņas</span>' : ""); }
+  else $("cur").textContent = "";
+  frac = frac || 0;
+  $("bigbar").style.width = (frac*100) + "%";
+  const bar = lineEls[cur] && lineEls[cur].querySelector(".prog i");
+  if(bar) bar.style.width = (frac*100) + "%";
+  if(l && l.kind === "line"){
+    const w = win(l), left = (w.e - w.s)*(1-frac)/speed;
+    $("nums").textContent = `${speakable().indexOf(cur) + 1} / ${speakable().length} · atlicis ${left.toFixed(1)} s`;
+  } else $("nums").textContent = "";
+}
+
+/* ================= Prompter navigation ================= */
+function nextIdx(from, dir){
+  for(let i = from + dir; i >= 0 && i < lines.length; i += dir) if(lines[i].kind === "line" && !isOff(lines[i])) return i;
+  return -1;
+}
+function select(i, scroll = true){
+  if(i < 0 || i >= lines.length || lines[i].kind !== "line" || isOff(lines[i])) return;
+  const oldBar = lineEls[cur] && lineEls[cur].querySelector(".prog i");
+  if(oldBar) oldBar.style.width = "0";
+  cur = i; state = "idle";
+  if(src) audio.pause();
+  prepare(i);
+  updateClasses(); renderStatus(0); updateNextFx(); markToc();
+  if(scroll) centerCurrent();
+}
+
+/* ================= Audio decode ================= */
+function win(l){ return {s: Math.max(0, l.start + offset - padB), e: l.end + offset + padA}; }
+async function decodeFile(file){
+  const rate = file.size < 60e6 ? 44100 : file.size < 150e6 ? 32000 : 24000;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const dctx = new AC({sampleRate: rate});
+  try{
+    const ab = await dctx.decodeAudioData(await file.arrayBuffer());
+    const chN = Math.min(2, ab.numberOfChannels), ch = [];
+    for(let c = 0; c < chN; c++){
+      const f = ab.getChannelData(c), o = new Int16Array(f.length);
+      for(let i = 0; i < f.length; i++){ const v = f[i]; o[i] = (v > 1 ? 1 : v < -1 ? -1 : v)*32767; }
+      ch.push(o);
+    }
+    return {ch, rate: ab.sampleRate, length: ab.length};
+  } finally { try{ dctx.close(); }catch(e){} }
+}
+function sampleRange(s, e){
+  const a = Math.max(0, Math.floor(s*src.rate)), b = Math.min(src.length, Math.ceil(e*src.rate));
+  return [a, Math.max(a, b)];
+}
+function wavBlob(samples, rate){
+  const h = new DataView(new ArrayBuffer(44)), n = samples.length*2;
+  const str = (o, t) => { for(let k = 0; k < t.length; k++) h.setUint8(o+k, t.charCodeAt(k)); };
+  str(0,"RIFF"); h.setUint32(4, 36+n, true); str(8,"WAVE"); str(12,"fmt ");
+  h.setUint32(16,16,true); h.setUint16(20,1,true); h.setUint16(22,1,true);
+  h.setUint32(24,rate,true); h.setUint32(28,rate*2,true); h.setUint16(32,2,true); h.setUint16(34,16,true);
+  str(36,"data"); h.setUint32(40,n,true);
+  return new Blob([h.buffer, samples], {type:"audio/wav"});
+}
+function monoClip(s, e){
+  const [a, b] = sampleRange(s, e);
+  if(src.ch.length === 1) return src.ch[0].subarray(a, b);
+  const L = src.ch[0], R = src.ch[1], o = new Int16Array(b - a);
+  for(let i = 0; i < o.length; i++) o[i] = (L[a+i] + R[a+i]) >> 1;
+  return o;
+}
+
+/* ================= Prompter playback ================= */
+function prepare(i){
+  const w = win(lines[i]);
+  demo.t = 0;
+  if(!src) return;
+  const key = i + "|" + w.s + "|" + w.e;
+  if(clipKey !== key){
+    if(clipUrl) URL.revokeObjectURL(clipUrl);
+    clipUrl = URL.createObjectURL(wavBlob(monoClip(w.s, w.e), src.rate));
+    clipKey = key; audio.src = clipUrl; audio.load();
+  } else { try{ audio.currentTime = 0; }catch(e){} }
+}
+function tickDemo(){ const now = performance.now(); demo.t += (now - demo.last)/1000*speed; demo.last = now; }
+function elapsed(){
+  if(src) return audio.currentTime;
+  if(state === "playing") tickDemo();
+  return demo.t;
+}
+function currentFrac(){ const w = win(lines[cur]); return Math.min(1, Math.max(0, elapsed()/(w.e - w.s))); }
+function setPitch(){ audio.playbackRate = speed; audio.preservesPitch = true; audio.mozPreservesPitch = true; audio.webkitPreservesPitch = true; }
+function setLinePan(){
+  const r = roles.get(lines[cur].role);
+  if(promptPan) promptPan.pan.setValueAtTime(PANV[(r && r.pan) || "both"], ctx.currentTime);
+}
+function startPlayback(){
+  const w = win(lines[cur]), dur = w.e - w.s;
+  state = "playing";
+  ensureCtx(); setLinePan(); applyMute();
+  if(src){
+    if(audio.ended || audio.currentTime >= dur - 0.01) audio.currentTime = 0;
+    setPitch(); audio.play().catch(err => showNotice("Audio neatskaņojas: " + err.message, true));
+  } else demo.last = performance.now();
+  loop();
+}
+function loop(){
+  cancelAnimationFrame(raf);
+  if(state !== "playing") return;
+  const w = win(lines[cur]), dur = w.e - w.s, el = elapsed();
+  renderStatus(Math.min(1, Math.max(0, el/dur)));
+  if((src && audio.ended) || el >= dur - 0.008){ finishLine(); return; }
+  raf = requestAnimationFrame(loop);
+}
+function finishLine(){
+  if(src) audio.pause();
+  const n = nextIdx(cur, 1);
+  if(n < 0){ state = "end"; renderStatus(1); updateClasses(); lineEls[cur].classList.add("said"); return; }
+  select(n);
+}
+function cancelCue(){
+  if(cueTimer){ clearTimeout(cueTimer); cueTimer = null; }
+  liveNodes.forEach(n => { try{ n.stop(); }catch(e){} }); liveNodes = [];
+}
+function onSpace(){
+  const l = lines[cur];
+  if(!l || l.kind !== "line" || loading) return;
+  if(state === "idle" || state === "end"){
+    if(state === "end") prepare(cur);
+    keepAwake();
+    applyMute();
+    if(markersOn && (!l.cont || markCont) && !lineMuted()){
+      state = "cue"; renderStatus(0);
+      const d = playMotif(roles.get(l.role));
+      cueTimer = setTimeout(() => { cueTimer = null; startPlayback(); }, (d + 0.12)*1000);
+    } else startPlayback();
+  } else if(state === "cue"){
+    cancelCue(); state = "idle"; renderStatus(0);
+  } else if(state === "playing"){
+    if(src) audio.pause(); else tickDemo();
+    cancelAnimationFrame(raf); state = "paused"; renderStatus(currentFrac());
+  } else if(state === "paused"){
+    state = "playing";
+    if(src){ ensureCtx(); setLinePan(); applyMute(); setPitch(); audio.play().catch(()=>{}); } else demo.last = performance.now();
+    loop();
+  }
+}
+function onUp(){
+  if(state === "playing" || state === "cue") return;
+  if(state === "paused"){ select(cur, false); return; }
+  if(state === "end"){ select(cur); return; }
+  const p = nextIdx(cur, -1); if(p >= 0) select(p);
+}
+function onDown(){
+  if(state === "playing" || state === "cue") return;
+  const n = nextIdx(cur, 1); if(n >= 0) select(n);
+}
+function goTo(i){ cancelCue(); cancelAnimationFrame(raf); if(src) audio.pause(); if(i !== undefined) select(i); }
+function onEsc(){ cancelCue(); cancelAnimationFrame(raf); if(src) audio.pause(); if(cur >= 0 && lines[cur]) select(cur, false); }
+
+/* ================= Sound cues (effects + atmosphere) ================= */
+function ensureFxCtx(){
+  if(!fx.ctx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    fx.ctx = new AC();
+    fx.master = fx.ctx.createGain(); fx.master.gain.value = fx.vol; fx.master.connect(fx.ctx.destination);
+    applySinks();
+  }
+  if(fx.ctx.state === "suspended") fx.ctx.resume();
+}
+function cueBuffer(l){
+  if(l.fs.buf) return l.fs.buf;
+  const [a, b] = sampleRange(l.start, l.end), len = Math.max(1, b - a);
+  const buf = fx.ctx.createBuffer(src.ch.length, len, src.rate);
+  src.ch.forEach((d, c) => { const o = buf.getChannelData(c); for(let i = 0; i < len; i++) o[i] = (d[a+i] || 0)/32768; });
+  return (l.fs.buf = buf);
+}
+const fxNow = l => l.fs.demo ? performance.now()/1000 : fx.ctx.currentTime;
+function fxElapsed(l){
+  const fs = l.fs, dur = l.end - l.start;
+  const el = fs.status === "playing" ? fxNow(l) - fs.t0 : fs.offset;
+  return l.loop ? el % dur : Math.min(el, dur);
+}
+function fxStart(i){
+  const l = lines[i], fs = l.fs, dur = l.end - l.start;
+  if(fs.status === "playing") return;
+  if(fs.offset >= dur - 0.01 && !l.loop) fs.offset = 0;
+  fs.done = true;
+  if(src){
+    ensureFxCtx();
+    const c = fx.ctx, t = c.currentTime + 0.01, node = c.createBufferSource();
+    node.buffer = cueBuffer(l);
+    const g = c.createGain(), fin = fs.offset > 0 ? 0.04 : 0.012;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(1, t + fin);
+    node.connect(g); g.connect(fx.master);
+    if(l.loop){ node.loop = true; node.start(t, fs.offset % dur); }
+    else {
+      const rem = dur - fs.offset;
+      g.gain.setValueAtTime(1, t + Math.max(fin + 0.001, rem - 0.015)); g.gain.linearRampToValueAtTime(0, t + rem);
+      node.start(t, fs.offset, rem);
+    }
+    fs.src = node; fs.g = g; fs.t0 = t - fs.offset; fs.demo = false;
+    node.onended = () => { if(fs.src === node){ fs.src = null; fs.status = "idle"; fs.offset = 0; fxPaint(i); updateNextFx(); } };
+  } else {
+    fs.demo = true; fs.t0 = performance.now()/1000 - fs.offset;
+  }
+  fs.status = "playing";
+  fxPaint(i); updateNextFx(); fxLoop();
+}
+function fxHalt(l, fade){
+  const fs = l.fs;
+  if(fs.src){
+    const node = fs.src, now = fx.ctx.currentTime;
+    fs.src = null;
+    fs.g.gain.cancelScheduledValues(now); fs.g.gain.setValueAtTime(fs.g.gain.value, now);
+    fs.g.gain.linearRampToValueAtTime(0, now + fade);
+    try{ node.stop(now + fade + 0.02); }catch(e){}
+  }
+}
+function fxPause(i){
+  const l = lines[i], fs = l.fs;
+  if(fs.status !== "playing") return;
+  fs.offset = fxElapsed(l); fxHalt(l, 0.03); fs.status = "paused"; fxPaint(i); updateNextFx();
+}
+function fxRestart(i){
+  const l = lines[i], fs = l.fs;
+  fxHalt(l, 0.06); fs.status = "idle"; fs.offset = 0; fs.done = false;
+  fxPaint(i); updateNextFx();
+}
+function fxStopAll(){
+  lines.forEach((l, i) => {
+    if(l.kind !== "fx" || l.fs.status === "idle") return;
+    fxHalt(l, 0.8); l.fs.status = "idle"; l.fs.offset = 0; fxPaint(i);
+  });
+  updateNextFx();
+}
+function fxPaint(i){
+  const l = lines[i], fs = l.fs, dur = l.end - l.start, frac = fs.status === "idle" ? 0 : fxElapsed(l)/dur;
+  for(const el of fs.els){
+    el.dataset.st = fs.status;
+    el.classList.toggle("done", fs.done);
+    el.querySelector(".play").textContent = fs.status === "playing" ? "❚❚" : "▶";
+    el.querySelector(".cbar i").style.width = (frac*100) + "%";
+  }
+}
+function fxLoop(){
+  cancelAnimationFrame(fx.raf);
+  let any = false;
+  lines.forEach((l, i) => {
+    if(l.kind !== "fx" || l.fs.status !== "playing") return;
+    any = true;
+    if(l.fs.demo && !l.loop && performance.now()/1000 - l.fs.t0 >= l.end - l.start){
+      l.fs.status = "idle"; l.fs.offset = 0; fxPaint(i); updateNextFx(); return;
+    }
+    fxPaint(i);
+  });
+  if(any) fx.raf = requestAnimationFrame(fxLoop);
+}
+/* "Next" sound for Enter: first not-yet-played cue after the previous prompter line */
+function updateNextFx(){
+  const p = cur >= 0 ? nextIdx(cur, -1) : -1;
+  let n = -1;
+  for(let i = p + 1; i < lines.length; i++){
+    const l = lines[i];
+    if(l.kind === "fx" && !l.fs.done && !isOff(l)){ n = i; break; }
+  }
+  fx.next = n;
+  lines.forEach((l, i) => { if(l.kind === "fx") l.fs.els.forEach(el => el.classList.toggle("next", i === n)); });
+  const playing = lines.filter(l => l.kind === "fx" && l.fs.status === "playing").length;
+  $("fxNext").innerHTML = (n >= 0 ? `<kbd>Enter</kbd> <b>${esc(lines[n].name)}</b>` : "Nav nākamās skaņas") + (playing ? ` · skan ${playing}` : "");
+}
+function fxGo(){ if(fx.next >= 0) fxStart(fx.next); }
+
+document.addEventListener("click", e => {
+  const b = e.target.closest(".cbtn"); if(!b) return;
+  const i = +b.closest(".cue").dataset.fx;
+  if(b.dataset.act === "toggle"){ lines[i].fs.status === "playing" ? fxPause(i) : fxStart(i); }
+  else fxRestart(i);
+  b.blur();
+});
+$("stopAllBtn").onclick = e => { fxStopAll(); e.currentTarget.blur(); };
+$("fxVol").oninput = e => { fx.vol = +e.target.value; $("fxVolOut").textContent = Math.round(fx.vol*100) + "%"; if(fx.master) fx.master.gain.value = fx.vol; };
+$("fxVol").onchange = e => e.target.blur();
+
+/* ================= Keyboard & clicks ================= */
+document.addEventListener("keydown", e => {
+  const k = e.code || e.key;
+  if(!["Space","ArrowUp","ArrowDown","Escape","Backspace","Home","End","Enter","NumpadEnter","Delete"].includes(k)) return;
+  e.preventDefault();
+  if(document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+  if(k === "Space"){ if(!e.repeat) onSpace(); }
+  else if(k === "ArrowUp") onUp();
+  else if(k === "ArrowDown") onDown();
+  else if(k === "Enter" || k === "NumpadEnter"){ if(!e.repeat) fxGo(); }
+  else if(k === "Delete") fxStopAll();
+  else if(k === "Home") goTo(speakable()[0]);
+  else if(k === "End") goTo(speakable()[speakable().length-1]);
+  else onEsc();
+});
+scriptEl.addEventListener("click", e => {
+  if(e.target.closest(".cue") || e.target.closest(".keep")) return;
+  const el = e.target.closest(".line"); if(!el) return;
+  const i = +el.dataset.i;
+  if(lines[i].kind !== "line" || isOff(lines[i]) || state === "playing" || state === "cue") return;
+  select(i);
+});
+
+/* ================= Role markers (Web Audio) ================= */
+let promptPan = null;
+function ensureCtx(){
+  if(!ctx){
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain(); master.gain.value = markerVol; master.connect(ctx.destination);
+    try{
+      const me = ctx.createMediaElementSource(audio);
+      promptPan = ctx.createStereoPanner(); me.connect(promptPan); promptPan.connect(ctx.destination);
+    }catch(e){ promptPan = null; }
+    applySinks();
+  }
+  if(ctx.state === "suspended") ctx.resume();
+}
+const mtof = m => 440 * Math.pow(2, (m - 69)/12);
+function osc(type, f, t, stop, dest){
+  const o = ctx.createOscillator(); o.type = type; o.frequency.setValueAtTime(f, t);
+  o.connect(dest); o.start(t); o.stop(stop); liveNodes.push(o); return o;
+}
+function voice(timbre, m, t, dur, out){
+  const g = ctx.createGain(); g.connect(out || master);
+  const G = g.gain; G.setValueAtTime(0.0001, t);
+  const f = mtof(m); let end;
+  switch(timbre){
+    case "zvans": {
+      end = t + dur + 0.35;
+      G.exponentialRampToValueAtTime(0.7, t+0.005); G.exponentialRampToValueAtTime(0.0001, end);
+      osc("sine", f, t, end, g);
+      const g2 = ctx.createGain(); g2.gain.value = 0.25; g2.connect(g); osc("sine", f*2.76, t, end, g2);
+      break; }
+    case "ksilofons":
+      end = t + 0.25;
+      G.exponentialRampToValueAtTime(0.9, t+0.003); G.exponentialRampToValueAtTime(0.0001, end);
+      osc("triangle", f, t, end, g); break;
+    case "flauta": {
+      end = t + dur;
+      G.linearRampToValueAtTime(0.6, t+0.04); G.setValueAtTime(0.6, t+dur*0.8); G.linearRampToValueAtTime(0.0001, end);
+      const o = osc("sine", f, t, end, g);
+      const lfo = ctx.createOscillator(), lg = ctx.createGain(); lfo.frequency.value = 5.5; lg.gain.value = f*0.008;
+      lfo.connect(lg); lg.connect(o.frequency); lfo.start(t); lfo.stop(end); liveNodes.push(lfo);
+      break; }
+    case "ergeles": {
+      end = t + dur;
+      const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 1800; lp.connect(g);
+      G.linearRampToValueAtTime(0.28, t+0.012); G.setValueAtTime(0.28, t+dur*0.85); G.linearRampToValueAtTime(0.0001, end);
+      osc("square", f, t, end, lp); break; }
+    default:
+      end = t + dur*0.8;
+      G.linearRampToValueAtTime(0.6, t+0.005); G.setValueAtTime(0.6, end-0.01); G.linearRampToValueAtTime(0.0001, end);
+      osc("sine", f*2, t, end, g);
+  }
+}
+function playMotif(r){
+  ensureCtx(); master.gain.value = markerVol;
+  const notes = MOTIFS[r.motif].notes, step = notes.length === 2 ? 0.2 : 0.15, t0 = ctx.currentTime + 0.02;
+  const pan = ctx.createStereoPanner(); pan.pan.value = PANV[r.pan || "both"]; pan.connect(master);
+  notes.forEach((m, k) => voice(r.timbre, m, t0 + k*step, step, pan));
+  return notes.length*step + 0.05;
+}
+async function keepAwake(){
+  if(wakeLock || !("wakeLock" in navigator)) return;
+  try{ wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => wakeLock = null); }catch(e){}
+}
+
+/* ================= Output devices ================= */
+const sinks = {prompt:"", fx:""};
+const canSink = "setSinkId" in HTMLMediaElement.prototype;
+function applySinks(){
+  if(!canSink) return;
+  audio.setSinkId(sinks.prompt).catch(err => showNotice("Suflierim neizdevās pārslēgt izvadi: " + err.message, true));
+  if(ctx && ctx.setSinkId) ctx.setSinkId(sinks.prompt).catch(err => showNotice("Suflierim neizdevās pārslēgt izvadi: " + err.message, true));
+  if(fx.ctx && fx.ctx.setSinkId) fx.ctx.setSinkId(sinks.fx).catch(err => showNotice("Skaņām neizdevās pārslēgt izvadi: " + err.message, true));
+}
+async function listDevices(ask){
+  if(!canSink || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices){
+    $("devHelp").textContent = "Šis pārlūks neļauj izvēlēties izvades ierīci. Izmantojiet Chrome vai Edge, vai iestatiet izvadi Windows skaļuma mikserī.";
+    return;
+  }
+  if(ask){
+    try{ const st = await navigator.mediaDevices.getUserMedia({audio:true}); st.getTracks().forEach(t => t.stop()); }
+    catch(e){ showNotice("Pārlūks neatļāva nolasīt ierīču nosaukumus. Atveriet suflieris.html lokāli Chrome vai Edge un atļaujiet piekļuvi.", true); }
+  }
+  let devs = [];
+  try{ devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "audiooutput" && d.deviceId && d.deviceId !== "default"); }catch(e){}
+  const saved = store.get("sinks", {});
+  for(const [key, id] of [["prompt","sinkPrompt"],["fx","sinkFx"]]){
+    const sel = $(id);
+    sel.innerHTML = `<option value="">Noklusētā (sistēmas)</option>` + devs.map((d, n) => `<option value="${esc(d.deviceId)}">${esc(d.label || "Izvade " + (n+1))}</option>`).join("");
+    const match = devs.find(d => d.label && d.label === saved[key]);
+    sinks[key] = match ? match.deviceId : "";
+    sel.value = sinks[key];
+  }
+  if(ask && devs.length) showNotice(`Atrastas ${devs.length} izvades ierīces.`);
+  applySinks();
+}
+function onSinkChange(key, sel){
+  sinks[key] = sel.value;
+  const saved = store.get("sinks", {});
+  saved[key] = sel.value ? sel.options[sel.selectedIndex].text : "";
+  store.set("sinks", saved);
+  if(key === "fx") ensureFxCtx(); else ensureCtx();
+  applySinks(); sel.blur();
+}
+$("sinkPrompt").onchange = e => onSinkChange("prompt", e.target);
+$("sinkFx").onchange = e => onSinkChange("fx", e.target);
+$("devBtn").onclick = e => { listDevices(true); e.currentTarget.blur(); };
+[["testL","L"],["testB","both"],["testR","R"]].forEach(([id, pan]) => $(id).onclick = e => { playMotif({motif:2, timbre:"zvans", pan}); e.currentTarget.blur(); });
+
+/* ================= Panels ================= */
+function showTab(name){
+  document.querySelectorAll(".tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === name));
+  document.querySelectorAll(".pane").forEach(p => p.hidden = p.dataset.pane !== name);
+  store.set("tab", name);
+}
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => { showTab(b.dataset.tab); b.blur(); });
+function layout(){
+  const narrow = innerWidth <= 1100, cols = ["minmax(0,1fr)"];
+  if(!$("tocCol").hidden) cols.push(narrow ? "190px" : "230px");
+  cols.push(narrow ? "230px" : "280px");
+  if(!$("aside").hidden) cols.push(narrow ? "250px" : "290px");
+  $("main").style.gridTemplateColumns = cols.join(" ");
+}
+window.addEventListener("resize", layout);
+function setDrawer(open){
+  $("aside").hidden = !open;
+  $("setBtn").setAttribute("aria-pressed", open); store.set("drawer", open); layout();
+}
+function setToc(open){
+  $("tocCol").hidden = !open;
+  $("tocBtn").setAttribute("aria-pressed", open); store.set("toc", open); layout();
+}
+$("tocBtn").onclick = e => { setToc($("tocCol").hidden); e.currentTarget.blur(); };
+$("setBtn").onclick = e => { setDrawer($("aside").hidden); e.currentTarget.blur(); };
+
+/* ================= Loading ================= */
+function showNotice(msg, err){ const n = $("notice"); n.hidden = !msg; n.textContent = msg || ""; n.classList.toggle("err", !!err); }
+function loadSRT(text, name){
+  const parsed = parseSRT(text);
+  if(!parsed.some(l => l.kind === "line" || l.kind === "fx")){ showNotice(`Failā „${name}” neatradu nevienu subtitru ar laiku.`, true); return; }
+  if(lines.length){ onEsc(); fxStopAll(); }
+  lines = parsed; _sp = null; buildRoles(); renderScript(); renderRoles();
+  $("srtName").textContent = name; srtFileName = name === "paraugs" ? "luga_paraugs.srt" : name;
+  setDirty(false);
+  if(lines.some(l => l.kind === "head")) setToc(store.get("toc", true));
+  cur = -1;
+  if(speakable().length) select(speakable()[0]); else { updateNextFx(); renderStatus(0); }
+  if(name !== "paraugs"){
+    const nFx = lines.filter(l => l.kind === "fx").length, nLib = parsed.libCount || 0;
+    const nH = lines.filter(l => l.kind === "head").length, nOff = parsed.raw.filter(r => r.off).length;
+    showNotice(`Ielādēts „${name}”: ${speakable().length} replikas, ${roles.size} lomas, ${nFx} skaņas` + (nLib ? ` (${nLib} no skaņu bloka faila beigās)` : "") + (nH ? `, ${nH} virsraksti` : "") + (nOff ? `, ${nOff} izslēgti bloki` : "") + ".");
+  }
+  checkLength();
+}
+function checkLength(){
+  if(!src || !lines.length) return;
+  const dur = src.length/src.rate, last = Math.max(...lines.map(l => l.end));
+  if(last > dur + 1) showNotice(`Uzmanību: SRT beidzas ${fmt(last)}, bet audio ir tikai ${fmt(dur)}.`, true);
+}
+async function loadAudio(file){
+  onEsc(); fxStopAll();
+  src = null; clipKey = ""; loading = true;
+  lines.forEach(l => { if(l.kind === "fx") l.fs.buf = null; });
+  audio.removeAttribute("src"); audio.load();
+  $("audioName").textContent = file.name + " · sagatavo…";
+  showNotice(`Sagatavo „${file.name}”. Garam failam tas var aizņemt dažas sekundes…`);
+  try{
+    src = await decodeFile(file);
+    $("audioName").textContent = file.name;
+    showNotice(`Audio gatavs: ${fmt(src.length/src.rate)}.`);
+    checkLength();
+  } catch(err){
+    src = null; $("audioName").textContent = "nav ielādēts";
+    showNotice(`Audio failu „${file.name}” neizdevās atvērt (${err.message || err}). Pamēģiniet saglabāt to kā WAV vai M4A.`, true);
+  }
+  loading = false;
+  if(cur >= 0) select(cur, false);
+}
+function handleFile(file){
+  if(!file) return;
+  if(/\.srt$|\.txt$/i.test(file.name)) file.text().then(t => loadSRT(t, file.name));
+  else if(/^audio\//.test(file.type) || /\.(mp3|wav|m4a|ogg|aac|flac)$/i.test(file.name)) loadAudio(file);
+  else showNotice(`„${file.name}” nav ne audio, ne SRT fails.`, true);
+}
+$("audioInput").onchange = e => { handleFile(e.target.files[0]); e.target.blur(); };
+$("srtInput").onchange = e => { handleFile(e.target.files[0]); e.target.blur(); };
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => { e.preventDefault(); [...e.dataTransfer.files].forEach(handleFile); });
+
+/* ================= Settings ================= */
+const st = store.get("settings", {});
+speed = st.speed || 1; markersOn = st.markersOn !== false; markCont = !!st.markCont; markerVol = st.markerVol ?? 0.6;
+if(typeof st.offset === "number") offset = st.offset;
+if(typeof st.padB === "number") padB = st.padB;
+if(typeof st.padA === "number") padA = st.padA;
+$("speed").value = speed; $("optMarkers").checked = markersOn; $("optCont").checked = markCont; $("optVol").value = markerVol;
+const saveSt = () => store.set("settings", {speed, markersOn, markCont, markerVol, offset, padB, padA});
+const showSpeed = () => $("speedOut").textContent = speed.toFixed(2) + "×";
+showSpeed();
+$("speed").oninput = e => { speed = +e.target.value; showSpeed(); if(src) audio.playbackRate = speed; saveSt(); if(state !== "playing" && cur >= 0) renderStatus(currentFrac()); };
+$("speed").onchange = e => e.target.blur();
+$("optMarkers").onchange = e => { markersOn = e.target.checked; saveSt(); e.target.blur(); };
+$("optCont").onchange = e => { markCont = e.target.checked; saveSt(); e.target.blur(); };
+$("optVol").oninput = e => { markerVol = +e.target.value; if(master) master.gain.value = markerVol; saveSt(); };
+$("optVol").onchange = e => e.target.blur();
+const timing = [["optOffset","outOffset",v=>offset=v,()=>offset,true],["optPadB","outPadB",v=>padB=v,()=>padB],["optPadA","outPadA",v=>padA=v,()=>padA]];
+for(const [inp, out, set, get, signed] of timing){
+  const show = () => { const v = get(); $(out).textContent = (signed && v > 0 ? "+" : "") + v.toFixed(2) + " s"; };
+  $(inp).value = get(); show();
+  $(inp).oninput = e => { set(+e.target.value); show(); saveSt(); if(state === "idle" && cur >= 0){ prepare(cur); renderStatus(0); } };
+  $(inp).onchange = e => e.target.blur();
+}
+
+/* ================= Start ================= */
+showTab(store.get("tab", "set"));
+setDrawer(store.get("drawer", true));
+setToc(store.get("toc", true));
+loadSRT(SAMPLE_SRT, "paraugs");
+listDevices(false);
+showNotice("Atvērts paraugs bez audio: laiks tiek imitēts. Space suflierim, Enter nākamajai skaņai. Ielādējiet savu audio un SRT ar pogām augšā.");
+})();
+</script>
