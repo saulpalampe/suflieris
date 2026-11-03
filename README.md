@@ -24,7 +24,7 @@
 
 ## Sākt
 
-1. **[Atvērt programmu pārlūkā](https://LIETOTAJVARDS.github.io/suflieris/suflieris.html)** vai lejupielādēt [`suflieris.html`](suflieris.html?raw=true) un atvērt to Chrome vai Edge.
+1. **[Atvērt programmu pārlūkā] (https://LIETOTAJVARDS.github.io/suflieris/suflieris.html)** vai lejupielādēt [`suflieris.html`](suflieris.html?raw=true) un atvērt to Chrome vai Edge.
 2. Lejupielādēt paraugu: [audio `luga_paraugs.mp3`](paraugs/luga_paraugs.mp3?raw=true) un [subtitrus `luga_paraugs.srt`](paraugs/luga_paraugs.srt?raw=true).
 3. Programmā ielādēt audio un SRT ar pogām augšā un spiest **Space**.
 
