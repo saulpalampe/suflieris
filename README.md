@@ -38,4 +38,4 @@ Projekts ir atvērts brīvai lietošanai: to var lietot, kopēt, pārveidot un i
 
 **Lūgums atsaukties uz pirmavotu.** Ja izmantojat vai pārveidojat Suflieri, lūdzu, norādiet autoru un saiti uz šo repozitoriju, piemēram:
 
-> Suflieris, autors Zinturs Breedis, https://github.com/LIETOTAJVARDS/suflieris
+> Suflieris, autors Dzintars Briedis, https://github.com/saulpalampe/suflieris
