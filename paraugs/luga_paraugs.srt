@@ -1,1 +1,103 @@
+1
+00:00:00,000 --> 00:00:00,300
+# 1. CĒLIENS
 
+2
+00:00:00,300 --> 00:00:00,600
+## 1. aina. Stacija vakarā
+
+3
+00:00:00,607 --> 00:00:03,007
+(Maza stacija. Vakars. Marta sēž uz čemodāna.)
+
+4
+00:00:03,400 --> 00:00:04,787
+FONS: Vējš stacijā (cilpa)
+
+5
+00:00:04,987 --> 00:00:09,067
+MARTA: Vilciens kavējas jau trešo stundu. Vai tas vispār pienāks?
+
+6
+00:00:09,460 --> 00:00:13,987
+ERNESTS: Pienāks. Vilcieni vienmēr pienāk, tikai ne tad, kad mēs gaidām.
+
+7
+00:00:14,340 --> 00:00:17,740
+MARTA: Jūs to sakāt tā, it kā būtu te nodzīvojis visu mūžu.
+
+8
+00:00:17,960 --> 00:00:21,367
+ERNESTS: Gandrīz. Divdesmit gadus es te pārdevu biļetes.
+
+9
+00:00:21,560 --> 00:00:24,520
+Tagad vairs nepārdodu. Tagad tikai gaidu.
+
+10
+00:00:24,600 --> 00:00:24,900
+SKAŅA: Soļi uz perona
+
+11
+00:00:24,931 --> 00:00:28,980
+KONDUKTORS: Pilsoni! Šeit sēdēt nedrīkst, sols ir svaigi krāsots.
+
+12
+00:00:29,293 --> 00:00:30,240
+ERNESTS: Kopš kura laika?
+
+13
+00:00:30,460 --> 00:00:32,880
+KONDUKTORS: Kopš rīta. Uzraksts taču karājās.
+
+14
+00:00:33,127 --> 00:00:34,820
+MARTA: Es neredzēju nekādu uzrakstu.
+
+15
+00:00:35,007 --> 00:00:37,367
+KONDUKTORS: Vējš to aiznesa. Bet krāsa palika.
+
+16
+00:00:37,370 --> 00:00:37,388
+## 2. aina. Preču vilciens
+
+17
+00:00:37,391 --> 00:00:37,691
+SKAŅA: Tāla vilciena svilpe
+
+18
+00:00:37,715 --> 00:00:38,742
+MARTA, ERNESTS: Vilciens!
+
+19
+00:00:38,966 --> 00:00:42,599
+KONDUKTORS: Nē. Tas ir preču vilciens. Tas te neapstājas.
+
+20
+00:00:42,767 --> 00:00:43,034
+SKAŅA: Preču vilciens pabrauc garām
+
+21
+00:00:43,240 --> 00:00:43,540
+FONS: Mūzika: fināls
+
+22
+00:00:43,979 --> 00:01:46,240
+FONS: Vējš stacijā
+
+23
+00:01:46,975 --> 00:01:54,021
+SKAŅA: Soļi uz perona
+
+24
+00:01:55,989 --> 00:01:59,529
+SKAŅA: Tāla vilciena svilpe
+
+25
+00:02:00,903 --> 00:02:51,286
+SKAŅA: Preču vilciens pabrauc garām
+
+26
+00:02:53,920 --> 00:04:39,386
+FONS: Mūzika: fināls
